@@ -9,6 +9,7 @@ public class UtilSprite {
 
     public static final String PATH_TO_SPRITES = "src/main/resources/images/";
 
+
     public static BufferedImage loadSprite(String filename) {
         BufferedImage sprite = null;
 
