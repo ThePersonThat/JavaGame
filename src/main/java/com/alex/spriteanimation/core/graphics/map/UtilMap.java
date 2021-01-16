@@ -8,8 +8,8 @@ public class UtilMap {
         String temp;
 
         for(int i = 0; i < height * width; i++) {
-                temp = stringData[i].replace("\n", "");
-                data[i] = Integer.parseInt(temp);
+            temp = stringData[i].replace("\n", "");
+            data[i] = Integer.parseInt(temp);
         }
 
         return data;

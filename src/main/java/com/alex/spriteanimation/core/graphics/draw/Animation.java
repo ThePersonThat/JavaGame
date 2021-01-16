@@ -93,7 +93,6 @@ public class Animation {
             else if(currentFrame < 0) {
                 currentFrame = totalFrames - 1;
             }
-
         }
     }
 

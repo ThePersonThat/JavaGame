@@ -4,6 +4,7 @@ import com.alex.spriteanimation.core.graphics.Draw;
 import com.alex.spriteanimation.core.graphics.draw.Animation;
 import com.alex.spriteanimation.core.graphics.draw.AnimationObject;
 import com.alex.spriteanimation.core.graphics.sprites.UtilSprite;
+import com.alex.spriteanimation.core.util.Camera;
 import com.alex.spriteanimation.core.util.HandleEvent;
 
 import java.awt.*;
@@ -100,8 +101,8 @@ public class Player extends AnimationObject implements Draw {
     }
 
     @Override
-    public void render(Graphics2D g) {
-        g.drawImage(currentAnimation.getSprite(), x, y, width, height, null);
+    public void render(Graphics2D g, Camera camera) {
+        g.drawImage(currentAnimation.getSprite(), camera.getX() + x, camera.getY() + y, width, height, null);
     }
 
     @Override

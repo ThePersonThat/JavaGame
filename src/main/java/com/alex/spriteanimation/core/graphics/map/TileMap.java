@@ -1,8 +1,10 @@
 package com.alex.spriteanimation.core.graphics.map;
 
 
+import com.alex.spriteanimation.Window;
 import com.alex.spriteanimation.core.graphics.Draw;
 import com.alex.spriteanimation.core.graphics.sprites.UtilSprite;
+import com.alex.spriteanimation.core.util.Camera;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -17,10 +19,12 @@ import java.io.File;
 import java.io.IOException;
 
 public class TileMap implements Draw {
-    private int width;
-    private int height;
+    private int countTilesWidth;
+    private int countTilesHeight;
     private int tileWidth;
     private int tileHeight;
+    private int mapHeight;
+    private int mapWidth;
     private int columns;
     private String imageName;
     private BufferedImage image;
@@ -30,11 +34,11 @@ public class TileMap implements Draw {
 
     public TileMap(String filename) {
         loadMap(filename);
-        int[] data = UtilMap.parseMapData(mapData, width, height);
-        tiles = new Tile[width][height];
+        int[] data = UtilMap.parseMapData(mapData, countTilesWidth, countTilesHeight);
+        tiles = new Tile[countTilesWidth][countTilesHeight];
 
-        for(int i = 0, k = 0; i < height; i++) {
-            for(int j = 0; j < width; j++) {
+        for(int i = 0, k = 0; i < countTilesHeight; i++) {
+            for(int j = 0; j < countTilesWidth; j++) {
                 tiles[i][j] = new Tile(data[k], columns, j, i, tileWidth, tileHeight, image);
                 k++;
             }
@@ -49,10 +53,13 @@ public class TileMap implements Draw {
 
             NodeList list = document.getElementsByTagName("map");
             Element element = (Element) list.item(0);
-            width = Integer.parseInt(element.getAttribute("width"));
-            height = Integer.parseInt(element.getAttribute("height"));
+            countTilesWidth = Integer.parseInt(element.getAttribute("width"));
+            countTilesHeight = Integer.parseInt(element.getAttribute("height"));
             tileHeight = Integer.parseInt(element.getAttribute("tileheight"));
             tileWidth = Integer.parseInt(element.getAttribute("tilewidth"));
+
+            mapHeight = countTilesHeight * tileHeight;
+            mapWidth = countTilesWidth * tileWidth;
 
             list = document.getElementsByTagName("tileset");
             element = (Element) list.item(0);
@@ -76,11 +83,19 @@ public class TileMap implements Draw {
         }
     }
 
+    public int getMapWidth() {
+        return mapWidth;
+    }
+
+    public int getMapHeight() {
+        return mapHeight;
+    }
+
     @Override
-    public void render(Graphics2D g) {
-        for(int i = 0; i < height; i++) {
-            for(int j = 0; j < width; j++) {
-                g.drawImage(tiles[i][j].getTile(), tiles[i][j].getX(), tiles[i][j].getY(), tileWidth, tileHeight, null);
+    public void render(Graphics2D g, Camera camera) {
+        for(int i = camera.startY(); i < camera.endY(); i++) {
+            for(int j = camera.startX(); j < camera.endX(); j++) {
+                g.drawImage(tiles[i][j].getTile(), camera.getX() + tiles[i][j].getX(), camera.getY() + tiles[i][j].getY(), tileWidth, tileHeight, null);
             }
         }
     }
@@ -88,5 +103,21 @@ public class TileMap implements Draw {
     @Override
     public void update() {
 
+    }
+
+    public int getTileHeight() {
+        return tileHeight;
+    }
+
+    public int getTileWidth() {
+        return tileWidth;
+    }
+
+    public int getCountTilesHeight() {
+        return countTilesHeight;
+    }
+
+    public int getCountTilesWidth() {
+        return countTilesWidth;
     }
 }
