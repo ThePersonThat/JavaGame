@@ -1,7 +1,6 @@
 package com.alex.spriteanimation.core.graphics.map;
 
 
-import com.alex.spriteanimation.Window;
 import com.alex.spriteanimation.core.graphics.Draw;
 import com.alex.spriteanimation.core.graphics.sprites.UtilSprite;
 import com.alex.spriteanimation.core.util.Camera;
@@ -17,6 +16,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+
 
 public class TileMap implements Draw {
     private int countTilesWidth;
@@ -29,11 +30,15 @@ public class TileMap implements Draw {
     private String imageName;
     private BufferedImage image;
     private String mapData;
-    private Tile[][] tiles;
+    private LoadMap loadMap;
+    private final Tile[][] tiles;
+    private final HashMap<String, MapObject> objects = new HashMap<>();
+
 
 
     public TileMap(String filename) {
-        loadMap(filename);
+        loadMap = new LoadMap(filename);
+        initMap();
         int[] data = UtilMap.parseMapData(mapData, countTilesWidth, countTilesHeight);
         tiles = new Tile[countTilesWidth][countTilesHeight];
 
@@ -45,42 +50,32 @@ public class TileMap implements Draw {
         }
     }
 
-    private void loadMap(String filename) {
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse(new File(filename));
+    private void initMap() {
+            String[] setting = loadMap.getFieldAttribute("map", "width", "height", "tileheight", "tilewidth");
 
-            NodeList list = document.getElementsByTagName("map");
-            Element element = (Element) list.item(0);
-            countTilesWidth = Integer.parseInt(element.getAttribute("width"));
-            countTilesHeight = Integer.parseInt(element.getAttribute("height"));
-            tileHeight = Integer.parseInt(element.getAttribute("tileheight"));
-            tileWidth = Integer.parseInt(element.getAttribute("tilewidth"));
+            countTilesWidth = Integer.parseInt(setting[0]); // width
+            countTilesHeight = Integer.parseInt(setting[1]); // height
+            tileHeight = Integer.parseInt(setting[2]); // tileHeight
+            tileWidth = Integer.parseInt(setting[3]); // tileWidth
 
             mapHeight = countTilesHeight * tileHeight;
             mapWidth = countTilesWidth * tileWidth;
 
-            list = document.getElementsByTagName("tileset");
-            element = (Element) list.item(0);
-            columns = Integer.parseInt(element.getAttribute("columns"));
+            setting = loadMap.getFieldAttribute("tileset", "columns");
+            columns = Integer.parseInt(setting[0]); // columns
 
-            list = document.getElementsByTagName("image");
-            element = (Element) list.item(0);
-            imageName = element.getAttribute("source");
+            setting = loadMap.getFieldAttribute("image", "source");
+            imageName = setting[0];
             image = UtilSprite.loadSprite("src/main/resources/" + imageName);
 
-            list = document.getElementsByTagName("data");
-            element = (Element) list.item(0);
+            mapData = loadMap.getData("data");
 
-            mapData = element.getTextContent();
-        } catch (ParserConfigurationException e) {
-            System.out.println("Error ParserConfiguration");
-        } catch (SAXException e) {
-            System.out.println("SAX error");
-        } catch (IOException exception) {
-            System.out.println("Error open file: " + exception.getMessage());
-        }
+            loadObjects();
+    }
+
+    private void loadObjects() {
+        MapObject object = loadMap.getObject("object");
+        objects.put("Player", object);
     }
 
     public int getMapWidth() {
@@ -103,6 +98,10 @@ public class TileMap implements Draw {
     @Override
     public void update() {
 
+    }
+
+    public HashMap<String, MapObject> getObjects() {
+        return objects;
     }
 
     public int getTileHeight() {
