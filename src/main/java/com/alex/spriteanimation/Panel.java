@@ -5,140 +5,131 @@ import com.alex.spriteanimation.core.states.GameState;
 import com.alex.spriteanimation.core.states.PlayState;
 import com.alex.spriteanimation.core.util.HandleEvent;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionListener;
+import java.awt.Canvas;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.image.BufferStrategy;
-import java.awt.image.BufferedImage;
 
-public class Panel extends JPanel implements Runnable {
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+
+public class Panel implements Runnable {
+
+    private final int WIDTH = Window.WINDOW_WIDTH;
+    private final int HEIGHT = Window.WINDOW_HEIGHT;
+
+    private JFrame frame;
+    private Canvas canvas;
+    private BufferStrategy bufferStrategy;
     private GameState state;
-    private boolean running = true;
-    private Thread thread;
-    private BufferStrategy buffer;
-    private BufferedImage image;
-    private Graphics graphics;
-    private double fps;
 
-    public Panel(BufferStrategy buffer) {
-        this.buffer = buffer;
-        initPanel();
-    }
+    public Panel() {
+        frame = new JFrame("Game");
 
-    private void initPanel() {
-        setBackground(Color.BLACK);
-        setPreferredSize(new Dimension(Window.WINDOW_WIDTH, Window.WINDOW_HEIGHT));
-        setBackground(Color.black);
-        setFocusable(true);
+        JPanel panel = (JPanel) frame.getContentPane();
+        panel.setPreferredSize(new Dimension(WIDTH, HEIGHT));
+        panel.setLayout(null);
 
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                state.input(new HandleEvent(e, true));
-            }
+        canvas = new Canvas();
+        canvas.setBounds(0, 0, WIDTH, HEIGHT);
+        canvas.setIgnoreRepaint(true);
 
-            @Override
-            public void keyReleased(KeyEvent e) {
-                state.input(new HandleEvent(e, false));
-            }
-        });
+        panel.add(canvas);
+
+        canvas.addKeyListener(new KeyControl());
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.pack();
+        frame.setResizable(false);
+        frame.setVisible(true);
+
+        canvas.createBufferStrategy(2);
+        bufferStrategy = canvas.getBufferStrategy();
+
+        canvas.requestFocus();
 
         state = new PlayState();
     }
 
-    private void initGraphics() {
-        image = new BufferedImage(Window.WINDOW_WIDTH, Window.WINDOW_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-        graphics = image.getGraphics();
+
+    private class KeyControl extends KeyAdapter {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            state.input(new HandleEvent(e, true));
+        }
+
+        @Override
+        public void keyReleased(KeyEvent e) {
+            state.input(new HandleEvent(e, false));
+        }
     }
 
+    private final long TARGET_FPS = 65;
+    private final long TARGET_DELTA_LOOP = (1000_000_000) / TARGET_FPS;
+    private boolean running = true;
+    private int fps;
 
     @Override
     public void run() {
-
-        initGraphics();
-
-        final double GAME_HERTZ = 60;
-        final double TBU = 1_000_000_000 / GAME_HERTZ;
-
-        final int MUBR = 5;
-        double lastUpdateTime = System.nanoTime();
-        double lastRenderTime;
-
-        final double TARGET_FPS = 60;
-        final double TTBR = 1_000_000_000 / TARGET_FPS;
-        int frameCount = 0;
-        int lastSecondTime = (int) (lastUpdateTime / 1_000_000_000);
-        int oldFrameCount = 0;
+        long beginLoopTime;
+        long endLoopTime;
+        long currentUpdateTime = System.nanoTime();
+        long lastUpdateTime;
+        long deltaLoop;
+        int counter = 0;
 
         while (running) {
-            double now = System.nanoTime();
-            int updateCount = 0;
-            while(((now - lastUpdateTime) > TBU) && (updateCount < MUBR)) {
-                update();
-                lastUpdateTime += TBU;
-                updateCount++;
-            }
-
-            if(now - lastUpdateTime > TBU) {
-                lastUpdateTime = now - TBU;
-            }
+            beginLoopTime = System.nanoTime();
 
             render();
-            draw();
-            lastRenderTime = now;
-            frameCount++;
-            int thisSecond = (int) (lastUpdateTime / 1_000_000_000);
 
-            if(thisSecond > lastSecondTime) {
-                if(frameCount != oldFrameCount) {
-                    System.out.println("NEW SECOND " + thisSecond + " " + frameCount);
-                }
-                fps = frameCount;
-                frameCount = 0;
-                lastSecondTime = thisSecond;
+            lastUpdateTime = currentUpdateTime;
+            currentUpdateTime = System.nanoTime();
+            update();
+
+            endLoopTime = System.nanoTime();
+            deltaLoop = endLoopTime - beginLoopTime;
+
+            counter += currentUpdateTime - lastUpdateTime;
+            fps++;
+
+            if(counter >= 1000_000_000) {
+                System.out.println("fps: " + fps);
+                fps = 0;
+                counter = 0;
             }
 
-            while (now - lastRenderTime < TTBR && now - lastUpdateTime < TBU) {
-                Thread.yield();
+            if (deltaLoop > TARGET_DELTA_LOOP) {
 
+            } else {
                 try {
-                    Thread.sleep(1);
+                    Thread.sleep((TARGET_DELTA_LOOP - deltaLoop) / (1000 * 1000));
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+
                 }
-                now = System.nanoTime();
             }
         }
     }
+
+    private void render() {
+        Graphics2D g = (Graphics2D) bufferStrategy.getDrawGraphics();
+        g.clearRect(0, 0, WIDTH, HEIGHT);
+        render(g);
+        g.dispose();
+        bufferStrategy.show();
+    }
+
 
     private void update() {
         state.update();
     }
 
-    private void render() {
-        graphics.setColor(Color.BLACK);
-        graphics.fillRect(0, 0, Window.WINDOW_WIDTH, Window.WINDOW_HEIGHT);
-        state.render((Graphics2D) graphics);
+    private void render(Graphics2D g){
+        state.render(g);
     }
 
-    private void draw() {
-        do {
-            Graphics g2 = buffer.getDrawGraphics();
-            g2.drawImage(image, 3, 26,Window.WINDOW_WIDTH + 10, Window.WINDOW_HEIGHT + 10, null);
-            g2.dispose();
-            buffer.show();
-        } while(buffer.contentsLost());
-    }
-
-    @Override
-    public void addNotify() {
-        super.addNotify();
-
-        if (thread == null) {
-            thread = new Thread(this, "GameThread");
-            thread.start();
-        }
-    }
 }
