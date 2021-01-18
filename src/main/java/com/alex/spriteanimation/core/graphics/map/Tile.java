@@ -11,6 +11,10 @@ public class Tile extends DrawnObject {
     public Tile(int position, int countColumns, int positionX, int positionY,
                 int tileWidth, int tileHeight, BufferedImage image) {
         super(positionX * tileWidth, positionY * tileHeight, tileWidth, tileHeight);
+
+        if(position == 0)
+            return;
+
         int xGrid = position % countColumns;
         int yGrid = position / countColumns;
 

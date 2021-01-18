@@ -4,19 +4,12 @@ package com.alex.spriteanimation.core.graphics.map;
 import com.alex.spriteanimation.core.graphics.Draw;
 import com.alex.spriteanimation.core.graphics.sprites.UtilSprite;
 import com.alex.spriteanimation.core.util.Camera;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
+import com.alex.spriteanimation.core.util.Tuple;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class TileMap implements Draw {
@@ -26,11 +19,9 @@ public class TileMap implements Draw {
     private int tileHeight;
     private int mapHeight;
     private int mapWidth;
-    private int columns;
-    private String imageName;
-    private BufferedImage image;
     private String mapData;
     private LoadMap loadMap;
+    private List<TileSet> sets;
     private final Tile[][] tiles;
     private final HashMap<String, MapObject> objects = new HashMap<>();
 
@@ -44,10 +35,14 @@ public class TileMap implements Draw {
 
         for(int i = 0, k = 0; i < countTilesHeight; i++) {
             for(int j = 0; j < countTilesWidth; j++) {
-                tiles[i][j] = new Tile(data[k], columns, j, i, tileWidth, tileHeight, image);
+                Tuple tuple = UtilMap.chooseSet(data[k], sets);
+                TileSet set = sets.get(tuple.getValue1());
+                tiles[i][j] = new Tile(tuple.getValue2(), set.getColumns(), j, i, tileWidth, tileHeight, set.getImage());
                 k++;
             }
         }
+
+        sets.clear();
     }
 
     private void initMap() {
@@ -61,16 +56,14 @@ public class TileMap implements Draw {
             mapHeight = countTilesHeight * tileHeight;
             mapWidth = countTilesWidth * tileWidth;
 
-            setting = loadMap.getFieldAttribute("tileset", "columns");
-            columns = Integer.parseInt(setting[0]); // columns
-
-            setting = loadMap.getFieldAttribute("image", "source");
-            imageName = setting[0];
-            image = UtilSprite.loadSprite("src/main/resources/" + imageName);
-
             mapData = loadMap.getData("data");
 
+            loadSets();
             loadObjects();
+    }
+
+    private void loadSets() {
+        sets = loadMap.loadTileSets();
     }
 
     private void loadObjects() {
